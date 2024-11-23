@@ -16,17 +16,17 @@ acc_number = os.getenv("ACC_NUMBER")
 
 
 
-def send_sms(number, sentence):
+def send_sms(recipient_number, txt):
     try:
-        if number and len(number) >= 12:
+        if recipient_number and len(recipient_number) >= 12:
             account_sid = acc_sid
             auth_token = authen_token
             client = Client(account_sid, auth_token)
             # Send an SMS
             message = client.messages.create(
-                body=str(sentence),
+                body=str(txt),
                 from_=acc_number,  # Your twilio number
-                to=str(number)  # The recipient's phone number
+                to=str(recipient_number)  # The recipient's phone number
             )
             return f"Message sent: {message.sid}"
     except Exception as error:

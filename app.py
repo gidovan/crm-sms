@@ -6,11 +6,6 @@ from datetime import date
 from sms import send_sms, unique_text
 import os
 from dotenv import load_dotenv
-import json
-
-# Load customer info json file
-# with open('contacts.json', 'r') as file:
-#     client_contacts = json.load(file)
 
 load_dotenv()
 
@@ -27,6 +22,18 @@ def init_connection():
 engine = init_connection()
 
 
+# Retrieves total number of clients from db
+def total_number_clients():
+    obia = set()
+    okpoloei = ['insurance_client', 'investment_client']
+    for okpolo in okpoloei:
+        total = get_all_db_client(okpolo)
+        for nipa in total:
+            sliced_data = nipa[1:7]
+            obia.add(tuple(sliced_data))
+    return list(list(nipa_baku) for nipa_baku in obia)
+
+
 # Get all clients from database
 def get_all_db_client(insurance_investment):
     query = text(f"SELECT id, fname, lname, prim_phone, busi_phone, cell_phone, dob FROM {insurance_investment}")
@@ -36,7 +43,7 @@ def get_all_db_client(insurance_investment):
             all_client = result.fetchall()
             # Convert nested tuples to lists
             all_client = [list(client_info) for client_info in all_client]
-            all_client.sort(key=lambda clients: clients[1])
+            all_client.sort(key=lambda clients: clients[1])  # Sorting using the first name of each client
             return all_client
     except Exception as errors:
         return errors
@@ -77,7 +84,7 @@ def add_schedule_event(date, group_client, message):
 
 # Function to retrieve all events from db
 def get_all_schedule_event():
-    query = text("SELECT date, group_client, message FROM scheduled_event")
+    query = text("SELECT id, date, group_client, message FROM scheduled_event")
     try:
         with engine.connect() as conn:
             results = conn.execute(query)
@@ -149,11 +156,6 @@ def internet_conn(status):
     net_status.error(status)
 
 
-
-
-
-
-
 # Check if user is logged in
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -216,14 +218,12 @@ else:
                 st.session_state["add_contact"] = False
                 st.session_state["view_schedule"] = True
 
-
-
     # Main interface for sms sending
     with st.container(border=True, key='login_container'):
         with st.form("txt_Form", border=True, clear_on_submit=True):
             selected_clients = st.selectbox(
                 "Which group of clients would you like to communicate with",
-                ('Investment Client', 'Insurance Client', 'Investment TESTING'),
+                ('Insurance Client', 'Investment Client', 'Investment TESTING'),
                 index=None,
                 placeholder="Select group of clients..."
             )
@@ -269,8 +269,6 @@ else:
     st.write("")
     st.write("")
 
-
-
     # Adding new contact info to database
     if 'add_contact' not in st.session_state:
         st.session_state["add_contact"] = None
@@ -310,8 +308,6 @@ else:
                     st.rerun()
                 else:
                     st.error("Some fields might be empty, please cross check!")
-
-
 
     # View Contacts page
     if 'view_contact' not in st.session_state:
@@ -366,8 +362,6 @@ else:
                             time.sleep(1)
                             st.rerun()
 
-
-
     # Add Schedule Page
     if 'add_schedule' not in st.session_state:
         st.session_state["add_schedule"] = None
@@ -401,29 +395,27 @@ else:
                     else:
                         st.error("Empty fields")
 
-
-
     # View Schedules Page
     if 'view_schedule' not in st.session_state:
         st.session_state["view_schedule"] = None
     if "view_schedule" and st.session_state["view_schedule"]:
         with st.container(border=True):
             list_of_schedule = get_all_schedule_event()
+            list_of_schedule = [[str(item) for item in event_schedule] for event_schedule in list_of_schedule]
             search_result = []
             st.info("AVAILABLE SCHEDULES")
             search_word = st.text_input("Search events:", placeholder="Looking for a specific event ?..")
             if search_word:
                 for items in list_of_schedule:
                     for info_item in items:
-                        if search_word in info_item:
+                        if search_word.lower() in info_item.lower():
                             search_result.append(items)
-                with st.container(border=True):
-                    for itemsz_info in search_result:
-                        st.checkbox(f"{itemsz_info[0]} - {itemsz_info[2]} ({itemsz_info[1]})")
+                for itemsz_info in search_result:
+                    with st.container(border=True):
+                        st.checkbox(f"{itemsz_info[1]} - {itemsz_info[3]} ({itemsz_info[2]})")
             else:
                 for items_in in list_of_schedule:
                     with st.container(border=True):
-                        st.checkbox(f"{items_in[0]} - {items_in[2]} ({items_in[1]})")
-
+                        st.checkbox(f"{items_in[1]} - {items_in[3]} ({items_in[2]})")
 
 st.json(st.session_state)
