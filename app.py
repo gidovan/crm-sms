@@ -418,4 +418,4 @@ else:
                     with st.container(border=True):
                         st.checkbox(f"{items_in[1]} - {items_in[3]} ({items_in[2]})")
 
-st.json(st.session_state)
+# st.json(st.session_state)
