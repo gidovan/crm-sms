@@ -4,8 +4,6 @@ import os
 from dotenv import load_dotenv
 import json
 
-with open("contacts.json", "r") as file:
-    contacts = json.load(file)
 
 
 
@@ -40,7 +38,7 @@ def unique_text(message, value):
         pass
 
 
-if __name__ == "__main__":
-    for name, number in contacts.items():
-        messages = unique_text("{} Good morning, i hope you're doing well", name)
-        send_sms(number, messages)
+# if __name__ == "__main__":
+#     for name, number in contacts.items():
+#         messages = unique_text("{} Good morning, i hope you're doing well", name)
+#         send_sms(number, messages)
