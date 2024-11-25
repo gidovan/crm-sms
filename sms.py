@@ -1,4 +1,3 @@
-import os
 from twilio.rest import Client
 import os
 from dotenv import load_dotenv
@@ -35,10 +34,10 @@ def unique_text(message, value):
     if '{}' in str(message):
         return message.format(str(value))
     else:
-        pass
+        return message
 
 
 # if __name__ == "__main__":
 #     for name, number in contacts.items():
-#         messages = unique_text("{} Good morning, i hope you're doing well", name)
+#         messages = unique_text("{} Good morning,  hope you're doing well", name)
 #         send_sms(number, messages)

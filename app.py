@@ -67,6 +67,18 @@ def add_new_client_db(clients_db, fname, lname, prim_phone, busi_phone, cell_pho
         return False
 
 
+# Delete Scheduled Event using the id
+def delete_Schedule_event(idz):
+    query = text('DELETE FROM scheduled_event WHERE id = :id')
+    try:
+        with engine.connect() as connection:
+            connection.execute(query, {'id': str(idz)})
+            connection.commit()
+            return "Delete successful"
+    except Exception as error:
+        print(error)
+
+
 # Function to add scheduled events to database
 def add_schedule_event(date, group_client, message):
     try:
@@ -266,8 +278,6 @@ else:
                     st.rerun()
 
     st.write("")
-    st.write("")
-    st.write("")
 
     # Adding new contact info to database
     if 'add_contact' not in st.session_state:
@@ -372,10 +382,10 @@ else:
                 add_sche_date, add_sche_client = st.columns(2)
                 sched_date = add_sche_date.date_input("Choose Date:", key="sched_date")
                 sched_clients = add_sche_client.selectbox("Select Clients:",
-                                                          ('Investment Clients', 'Insurance Clients',
+                                                          ('Investment Clients', 'Insurance Clients', 'All Clients',
                                                            'Insurance TESTING', 'Investment TESTING'),
                                                           index=None,
-                                                          placeholder="Select a group of clients", key="sched_clients"
+                                                          placeholder="Select group of clients", key="sched_clients"
                                                           )
                 sched_message = st.text_area("Messages here:", height=200, key='sched_message')
                 if st.form_submit_button("SAVE ME"):
@@ -387,6 +397,8 @@ else:
                         sched_clients = "insuran_client_test"
                     elif sched_clients == 'Investment TESTING':
                         sched_clients = "invst_client_test"
+                    elif sched_clients == 'All Clients':
+                        sched_clients = "all_clients"
                     else:
                         sched_clients = None
                     if all([sched_date, sched_clients, sched_message]):
@@ -399,7 +411,7 @@ else:
     if 'view_schedule' not in st.session_state:
         st.session_state["view_schedule"] = None
     if "view_schedule" and st.session_state["view_schedule"]:
-        with st.container(border=True):
+        with st.container(border=True, height=720):
             list_of_schedule = get_all_schedule_event()
             list_of_schedule = [[str(item) for item in event_schedule] for event_schedule in list_of_schedule]
             search_result = []
@@ -412,10 +424,13 @@ else:
                             search_result.append(items)
                 for itemsz_info in search_result:
                     with st.container(border=True):
-                        st.checkbox(f"{itemsz_info[1]} - {itemsz_info[3]} ({itemsz_info[2]})")
+                        if st.checkbox(f"{itemsz_info[1]} - {itemsz_info[3]} ({itemsz_info[2]})"):
+                            delete_Schedule_event(itemsz_info[0])
             else:
                 for items_in in list_of_schedule:
                     with st.container(border=True):
-                        st.checkbox(f"{items_in[1]} - {items_in[3]} ({items_in[2]})")
+                        delete_info = st.checkbox(f"{items_in[1]} - {items_in[3]} \n({items_in[2]})")
+                        if delete_info:
+                            delete_Schedule_event(items_in[0])
 
 # st.json(st.session_state)
