@@ -125,22 +125,13 @@ def event_executor():
         time.sleep(86400)
 
 
-bck_proces1 = threading.Thread(target=wish_happy_birthday)
-bck_proces2 = threading.Thread(target=event_executor)
 
-bck_proces1.start()
-bck_proces2.start()
+if __name__ == "__main__":
+    bck_proces1 = threading.Thread(target=wish_happy_birthday)
+    bck_proces2 = threading.Thread(target=event_executor)
 
-bck_proces1.join()
-bck_proces2.join()
+    bck_proces1.start()
+    bck_proces2.start()
 
-#
-# if __name__ == "__Main__":
-#     bck_proces1 = threading.Thread(target=wish_happy_birthday)
-#     bck_proces2 = threading.Thread(target=event_executor)
-#
-#     bck_proces1.start()
-#     bck_proces2.start()
-#
-#     bck_proces1.join()
-#     bck_proces2.join()
+    bck_proces1.join()
+    bck_proces2.join()
