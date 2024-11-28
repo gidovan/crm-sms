@@ -6,6 +6,7 @@ from datetime import date
 from sms import send_sms, unique_text
 import os
 from dotenv import load_dotenv
+from bkground_apps import total_number_clients, get_all_schedule_event, get_all_db_client
 
 load_dotenv()
 
@@ -23,30 +24,42 @@ engine = init_connection()
 
 
 # Retrieves total number of clients from db
-def total_number_clients():
-    obia = set()
-    okpoloei = ['insurance_client', 'investment_client']
-    for okpolo in okpoloei:
-        total = get_all_db_client(okpolo)
-        for nipa in total:
-            sliced_data = nipa[1:7]
-            obia.add(tuple(sliced_data))
-    return list(list(nipa_baku) for nipa_baku in obia)
+# def total_number_clients():
+#     obia = set()
+#     okpoloei = ['insurance_client', 'investment_client']
+#     for okpolo in okpoloei:
+#         total = get_all_db_client(okpolo)
+#         for nipa in total:
+#             sliced_data = nipa[0:7]
+#             obia.add(tuple(sliced_data))
+#     return list(list(nipa_baku) for nipa_baku in obia)
 
 
 # Get all clients from database
-def get_all_db_client(insurance_investment):
-    query = text(f"SELECT id, fname, lname, prim_phone, busi_phone, cell_phone, dob FROM {insurance_investment}")
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(query)
-            all_client = result.fetchall()
-            # Convert nested tuples to lists
-            all_client = [list(client_info) for client_info in all_client]
-            all_client.sort(key=lambda clients: clients[1])  # Sorting using the first name of each client
-            return all_client
-    except Exception as errors:
-        return errors
+# def get_all_db_client(insurance_investment):
+#     query = text(f"SELECT id, fname, lname, prim_phone, busi_phone, cell_phone, dob FROM {insurance_investment}")
+#     try:
+#         with engine.connect() as conn:
+#             result = conn.execute(query)
+#             all_client = result.fetchall()
+#             # Convert nested tuples to lists
+#             all_client = [list(client_info) for client_info in all_client]
+#             all_client.sort(key=lambda clients: clients[1])  # Sorting using the first name of each client
+#             return all_client
+#     except Exception as errors:
+#         return errors
+
+
+# Function to retrieve all events from db
+# def get_all_schedule_event():
+#     query = text("SELECT id, date, group_client, message FROM scheduled_event")
+#     try:
+#         with engine.connect() as conn:
+#             results = conn.execute(query)
+#             all_schedules = results.fetchall()
+#             return [list(item) for item in all_schedules]
+#     except Exception as error:
+#         print(error)
 
 
 # Function to add new contact to db
@@ -92,18 +105,6 @@ def add_schedule_event(date, group_client, message):
     except Exception as error:
         print("Error inserting user:", error)
         return False
-
-
-# Function to retrieve all events from db
-def get_all_schedule_event():
-    query = text("SELECT id, date, group_client, message FROM scheduled_event")
-    try:
-        with engine.connect() as conn:
-            results = conn.execute(query)
-            all_schedules = results.fetchall()
-            return [list(item) for item in all_schedules]
-    except Exception as error:
-        print(error)
 
 
 # Function to delete data in db, using id
@@ -259,8 +260,8 @@ else:
                 st.session_state["view_schedule"] = False
                 if len(sender_text) < 10:
                     st.warning("characters should be 10 or more")
-                elif '{}' not in st.session_state['sender_txt']:
-                    st.warning("You forgot place holders")
+                # elif '{}' not in st.session_state['sender_txt']:
+                #     st.warning("You forgot place holders")
                 elif selected_clients is None:
                     st.warning("Choose insurance or investment client")
                 else:
@@ -268,10 +269,13 @@ else:
                     client_contacts = get_all_db_client(selected_clients)
                     total_contact = len(client_contacts)
                     for index, recipient_info in enumerate(client_contacts):
-                        unique_message = unique_text(sender_text, recipient_info[1])
-                        send_sms(recipient_info[3], unique_message)
+                        unique_message = unique_text(sender_text, f'{recipient_info[1]} {recipient_info[2]}')
+                        if recipient_info[3]:
+                            send_sms(recipient_info[3], unique_message)
+                        else:
+                            send_sms(recipient_info[5], unique_message)
                         progress = (index + 1) / total_contact
-                        progress_bar.progress(progress, text=f"SMS SENDING IN PROGRESS: {recipient_info[1]}")
+                        progress_bar.progress(progress, text=f"SMS SENDING IN PROGRESS: {recipient_info[1].upper()}")
                         time.sleep(2)
                     progress_bar.empty()
                     st.success("Messages sent successfully.")
@@ -404,6 +408,8 @@ else:
                     if all([sched_date, sched_clients, sched_message]):
                         add_schedule_event(sched_date, sched_clients, sched_message)
                         st.success("Event saved successfully")
+                        time.sleep(3)
+                        st.rerun()
                     else:
                         st.error("Empty fields")
 
@@ -426,11 +432,13 @@ else:
                     with st.container(border=True):
                         if st.checkbox(f"{itemsz_info[1]} - {itemsz_info[3]} ({itemsz_info[2]})"):
                             delete_Schedule_event(itemsz_info[0])
+                            st.rerun()
             else:
                 for items_in in list_of_schedule:
                     with st.container(border=True):
                         delete_info = st.checkbox(f"{items_in[1]} - {items_in[3]} \n({items_in[2]})")
                         if delete_info:
                             delete_Schedule_event(items_in[0])
+                            st.rerun()
 
 # st.json(st.session_state)
