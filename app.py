@@ -440,5 +440,3 @@ else:
                         if delete_info:
                             delete_Schedule_event(items_in[0])
                             st.rerun()
-
-
