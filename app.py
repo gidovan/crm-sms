@@ -300,7 +300,7 @@ else:
                         saving_db = None
                     add_new_client_db(saving_db, first_name, last_name, phone, phone, phone, dob, lang)
                     print("it all a truthy")
-                    st.success("Client saved successfully")
+                    st.success("Client saved successfully", icon="✅")
                     st.snow()
                     time.sleep(3)
                     st.session_state["add_contact"] = False
@@ -349,8 +349,8 @@ else:
                             updated_status = update_clients_data(select_clients, c_name[0], edit_fname, edit_lname,
                                                                  edit_phone, "", edit_phone,
                                                                  edit_dob.strftime("%Y-%m-%d"))
-                            st.success(updated_status)
-                            time.sleep(2)
+                            st.success(updated_status, icon="✅")
+                            time.sleep(1)
                             st.rerun()
                         if edit_colum2.button("Delete", key=f"{index}-{c_name[2]}"):
                             st.success(delete_data_db(f"{c_name[1]} {c_name[2]}", select_clients, c_name[0]))
@@ -386,7 +386,7 @@ else:
                         sched_clients = None
                     if all([sched_date, sched_clients, sched_message]):
                         add_schedule_event(sched_date, sched_clients, sched_message)
-                        st.success("Event saved successfully")
+                        st.success("Event saved successfully", icon="✅")
                         time.sleep(3)
                         st.rerun()
                     else:
