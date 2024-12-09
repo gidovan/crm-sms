@@ -1,12 +1,11 @@
-from sms import send_sms, unique_text
-# from app_ori import get_all_db_client, total_number_clients, get_all_schedule_event
 from datetime import datetime, timedelta, date, time
-import pytz
-import time
-import threading
 from sqlalchemy import create_engine, text
-import os
+from sms import send_sms, unique_text
 from dotenv import load_dotenv
+import threading
+import time
+import pytz
+import os
 
 load_dotenv()
 
@@ -23,19 +22,23 @@ def init_connection():
 engine = init_connection()
 
 
+
+
+
 def total_number_clients():
     obia = set()
     okpoloei = ['insurance_client', 'investment_client']
     for okpolo in okpoloei:
         total = get_all_db_client(okpolo)
         for nipa in total:
-            sliced_data = nipa[0:7]
+            sliced_data = nipa[1:8]
             obia.add(tuple(sliced_data))
     return list(list(nipa_baku) for nipa_baku in obia)
 
 
 def get_all_db_client(insurance_investment):
-    query = text(f"SELECT id, fname, lname, prim_phone, busi_phone, cell_phone, dob FROM {insurance_investment}")
+    query = text(
+        f"SELECT id, fname, lname, prim_phone, busi_phone, cell_phone, dob, language FROM {insurance_investment}")
     try:
         with engine.connect() as conn:
             result = conn.execute(query)
@@ -67,10 +70,11 @@ def wish_happy_birthday():
         today = datetime.now(montreal_tz).date()  # Getting date only
         client_list = total_number_clients()
         for client in client_list:
-            client_name = f"{client[1]} {client[2]}"
-            email_message = (
+            client_name = f"{client[0]} {client[1]}"
+            sms_message = (
                 f"Je te souhaite une bonne fête, {client_name} 🎉.\n\n"
-                "Que cette journée spéciale soit remplie de joie, de succès, et de beaux moments à partager avec tes proches.\n\n"
+                "Que cette journée spéciale soit remplie de joie, de succès, et de beaux moments à partager avec tes "
+                "proches.\n\n"
                 "Joyeux anniversaire !\n\n"
                 "Jean Kokou\n"
                 "Votre Conseiller Financier\n"
@@ -79,21 +83,21 @@ def wish_happy_birthday():
                 "514 793 3114"
             )
 
-            dob = client[-1]
+            dob = client[-2]
             if dob.strftime('%Y-%m-%d') == '1900-01-01':
                 pass
             else:
                 if dob.month == today.month and dob.day == today.day:
-                    if client[3]:
-                        if '_' in client[3]:
-                            send_sms(f"+1{client[3].replace('-', "")}", email_message)
+                    if client[2]:
+                        if '_' in client[2]:
+                            send_sms(f"+1{client[2].replace('-', "")}", sms_message, client[-1])
                         else:
-                            send_sms(client[3], email_message)
+                            send_sms(client[2], sms_message, client[-1])
                     else:
-                        if '_' in client[5]:
-                            send_sms(f"+1{client[5].replace('-', "")}", email_message)
+                        if '_' in client[4]:
+                            send_sms(f"+1{client[4].replace('-', "")}", sms_message, client[-1])
                         else:
-                            send_sms(client[5], email_message)
+                            send_sms(client[4], sms_message, client[-1])
         time.sleep(86400)
 
 
@@ -108,22 +112,34 @@ def event_executor():
             if event_date == today:
                 if event[2] in ("insurance_client", "investment_client", "insuran_client_test", "invst_client_test"):
                     recipients = get_all_db_client(event[2])
+                    for recipient in recipients:
+                        message = unique_text(event[3], f"{recipient[1]} {recipient[2]}".strip())
+                        if recipient[3]:
+                            if '-' in recipient[3]:
+                                send_sms(f"+1{recipient[3].replace('-', "")}", message, recipient[-1])
+                            else:
+                                send_sms(f"{recipient[3]}", message, recipient[-1])
+                        else:
+                            if '-' in recipient[5]:
+                                send_sms(f"+1{recipient[5].replace('-', "")}", message, recipient[-1])
+                            else:
+                                send_sms(f"{recipient[5]}", message, recipient[-1])
                 else:
                     recipients = total_number_clients()
-                for recipient in recipients:
-                    message = unique_text(event[3], f"{recipient[1]} {recipient[2]}".strip())
-                    if recipient[3]:
-                        if '-' in recipient[3]:
-                            send_sms(f"+1{recipient[3].replace('-', "")}", message)
+                    for recipient in recipients:
+                        message = unique_text(event[3], f"{recipient[0]} {recipient[1]}".strip())
+                        if recipient[2]:
+                            if '-' in recipient[2]:
+                                send_sms(f"+1{recipient[2].replace('-', "")}", message, recipient[-1])
+                            else:
+                                send_sms(f"{recipient[2]}", message, recipient[-1])
                         else:
-                            send_sms(f"{recipient[3]}", message)
-                    else:
-                        if '-' in recipient[5]:
-                            send_sms(f"+1{recipient[5].replace('-', "")}", message)
-                        else:
-                            send_sms(f"{recipient[5]}", message)
-        time.sleep(86400)
+                            if '-' in recipient[4]:
+                                send_sms(f"+1{recipient[4].replace('-', "")}", message, recipient[-1])
+                            else:
+                                send_sms(f"{recipient[4]}", message, recipient[-1])
 
+        time.sleep(86400)
 
 
 if __name__ == "__main__":

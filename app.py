@@ -1,12 +1,12 @@
-import streamlit as st
-from sqlalchemy import create_engine, text
-import time
-import datetime
-from datetime import date
-from sms import send_sms, unique_text
-import os
-from dotenv import load_dotenv
 from bkground_apps import total_number_clients, get_all_schedule_event, get_all_db_client
+from sqlalchemy import create_engine, text
+from sms import send_sms, unique_text
+from dotenv import load_dotenv
+from datetime import date
+import streamlit as st
+import datetime
+import time
+import os
 
 load_dotenv()
 
@@ -23,55 +23,17 @@ def init_connection():
 engine = init_connection()
 
 
-# Retrieves total number of clients from db
-# def total_number_clients():
-#     obia = set()
-#     okpoloei = ['insurance_client', 'investment_client']
-#     for okpolo in okpoloei:
-#         total = get_all_db_client(okpolo)
-#         for nipa in total:
-#             sliced_data = nipa[0:7]
-#             obia.add(tuple(sliced_data))
-#     return list(list(nipa_baku) for nipa_baku in obia)
-
-
-# Get all clients from database
-# def get_all_db_client(insurance_investment):
-#     query = text(f"SELECT id, fname, lname, prim_phone, busi_phone, cell_phone, dob FROM {insurance_investment}")
-#     try:
-#         with engine.connect() as conn:
-#             result = conn.execute(query)
-#             all_client = result.fetchall()
-#             # Convert nested tuples to lists
-#             all_client = [list(client_info) for client_info in all_client]
-#             all_client.sort(key=lambda clients: clients[1])  # Sorting using the first name of each client
-#             return all_client
-#     except Exception as errors:
-#         return errors
-
-
-# Function to retrieve all events from db
-# def get_all_schedule_event():
-#     query = text("SELECT id, date, group_client, message FROM scheduled_event")
-#     try:
-#         with engine.connect() as conn:
-#             results = conn.execute(query)
-#             all_schedules = results.fetchall()
-#             return [list(item) for item in all_schedules]
-#     except Exception as error:
-#         print(error)
-
-
 # Function to add new contact to db
-def add_new_client_db(clients_db, fname, lname, prim_phone, busi_phone, cell_phone, dob):
+def add_new_client_db(clients_db, fname, lname, prim_phone, busi_phone, cell_phone, dob, language):
     try:
         query = text(
-            f"INSERT INTO {clients_db} (fname, lname, prim_phone, busi_phone, cell_phone, dob) VALUES (:fname, :lname,"
-            ":prim_phone, :busi_phone, :cell_phone, :dob)")
+            f"INSERT INTO {clients_db} (fname, lname, prim_phone, busi_phone, cell_phone, dob, language) VALUES ("
+            f":fname, :lname,"
+            ":prim_phone, :busi_phone, :cell_phone, :dob, :language)")
         with engine.connect() as connection:
             connection.execute(query,
                                {'fname': fname, 'lname': lname, "prim_phone": prim_phone, 'busi_phone': busi_phone,
-                                'cell_phone': cell_phone, 'dob': dob})
+                                'cell_phone': cell_phone, 'dob': dob, 'language': language})
             connection.commit()
         print("contact inserted successfully!")
         return True
@@ -131,14 +93,13 @@ def update_clients_data(table, id, fname, lname, prim_phone, busi_phone, cell_ph
     """)
     try:
         with engine.connect() as connection:
-            # Execute the update query
             result = connection.execute(query,
                                         {"fname": fname, "lname": lname, "prim_phone": prim_phone,
                                          "busi_phone": busi_phone, "cell_phone": cell_phone,
                                          "dob": dob, "id": id})
             # Commit the changes to the database
             connection.commit()
-            # Check how many rows were affected
+            # CheckING how many rows were affected
             if result.rowcount > 0:
                 print(f"Updated {result.rowcount} row(s).")
             else:
@@ -236,7 +197,7 @@ else:
         with st.form("txt_Form", border=True, clear_on_submit=True):
             selected_clients = st.selectbox(
                 "Which group of clients would you like to communicate with",
-                ('Insurance Client', 'Investment Client', 'Investment TESTING'),
+                ('Insurance Client', 'Investment Client', 'All Clients', 'TESTING'),
                 index=None,
                 placeholder="Select group of clients..."
             )
@@ -244,8 +205,10 @@ else:
                 selected_clients = 'investment_clients'
             elif selected_clients == 'Insurance Client':
                 selected_clients = "insurance_client"
-            elif selected_clients == "Investment TESTING":
-                selected_clients = "invst_client_test"
+            elif selected_clients == "TESTING":
+                selected_clients = "insuran_client_test"
+            elif selected_clients == "All Clients":
+                selected_clients = "all_clients"
             else:
                 selected_clients = None
             sender_text = st.text_area(label="Message here:",
@@ -258,28 +221,45 @@ else:
                 st.session_state["view_contact"] = False
                 st.session_state["add_contact"] = False
                 st.session_state["view_schedule"] = False
-                if len(sender_text) < 10:
-                    st.warning("characters should be 10 or more")
-                # elif '{}' not in st.session_state['sender_txt']:
-                #     st.warning("You forgot place holders")
-                elif selected_clients is None:
-                    st.warning("Choose insurance or investment client")
+                if not selected_clients and not sender_text:
+                    st.error("Empty Fields!", icon="🚨")
+                elif not sender_text:
+                    st.warning("Write a message", icon="⚠️")
+                elif not selected_clients:
+                    st.warning("Selected targeted group of clients", icon="⚠️")
                 else:
-                    progress_bar = st.progress(0)
-                    client_contacts = get_all_db_client(selected_clients)
-                    total_contact = len(client_contacts)
-                    for index, recipient_info in enumerate(client_contacts):
-                        unique_message = unique_text(sender_text, f'{recipient_info[1]} {recipient_info[2]}')
-                        if recipient_info[3]:
-                            send_sms(recipient_info[3], unique_message)
-                        else:
-                            send_sms(recipient_info[5], unique_message)
-                        progress = (index + 1) / total_contact
-                        progress_bar.progress(progress, text=f"SMS SENDING IN PROGRESS: {recipient_info[1].upper()}")
-                        time.sleep(2)
-                    progress_bar.empty()
-                    st.success("Messages sent successfully.")
-                    st.rerun()
+                    if selected_clients == "all_clients":
+                        client_contacts = total_number_clients()
+                        progress_bar = st.progress(0)
+                        total_contact = len(client_contacts)
+                        for index, recipient_info in enumerate(client_contacts):
+                            unique_message = unique_text(sender_text, f'{recipient_info[0]} {recipient_info[1]}')
+                            if recipient_info[2]:
+                                send_sms(recipient_info[2], unique_message, recipient_info[-1])
+                            else:
+                                send_sms(recipient_info[4], unique_message, recipient_info[-1])
+                            progress = (index + 1) / total_contact
+                            progress_bar.progress(progress,
+                                                  text=f"SENDING IN PROGRESS: {recipient_info[0].upper()}")
+                            time.sleep(2)
+                        progress_bar.empty()
+                        st.success("Messages sent successfully.", icon="✅")
+                    else:
+                        progress_bar = st.progress(0)
+                        client_contacts = get_all_db_client(selected_clients)
+                        total_contact = len(client_contacts)
+                        for index, recipient_info in enumerate(client_contacts):
+                            unique_message = unique_text(sender_text, f'{recipient_info[1]} {recipient_info[2]}')
+                            if recipient_info[3]:
+                                send_sms(recipient_info[3], unique_message, recipient_info[-1])
+                            else:
+                                send_sms(recipient_info[5], unique_message, recipient_info[-1])
+                            progress = (index + 1) / total_contact
+                            progress_bar.progress(progress,
+                                                  text=f"SMS SENDING IN PROGRESS: {recipient_info[1].upper()}")
+                            time.sleep(2)
+                        progress_bar.empty()
+                        st.success("Messages sent successfully.", icon="✅")
 
     st.write("")
 
@@ -290,7 +270,7 @@ else:
         with st.container(border=True, key='add_contact1'):
             st.info("ADD NEW CLIENTS TO DATABASE")
             saving_db = st.selectbox('Saving to insurance client or investment client',
-                                     ("Investment Clients", 'Insurance Clients', 'Client Test', 'Client Test 2'),
+                                     ('Client Test', "Investment Clients", 'Insurance Clients'),
                                      index=None,
                                      placeholder='Belongs to which set of clients?..'
                                      )
@@ -300,20 +280,25 @@ else:
             last_name = lname.text_input("Last name:")
             phone = phone_no.text_input("Mobile No#:", placeholder="+14321234567")
             dob = c_dob.date_input("Date Of Birth:", min_value=date(1900, 1, 1), max_value=date.today())
+            lang = st.selectbox('Choose language:', ('English', 'French'), index=None, placeholder="Select Language")
+            if lang == 'French':
+                lang = 'fr'
+            elif lang == 'English':
+                lang = 'en'
+            else:
+                lang = None
             save_butt1, save_butt2, save_butt3 = st.columns([4, 2, 4])
             if save_butt2.button("SAVE.."):
-                if all([first_name, last_name, phone, dob, saving_db]):
+                if all([first_name, last_name, phone, dob, saving_db, lang]):
                     if saving_db == "Investment Clients":
                         saving_db = "investment_client"
                     elif saving_db == "Insurance Clients":
                         saving_db = "insurance_client"
                     elif saving_db == "Client Test":
                         saving_db = "insuran_client_test"
-                    elif saving_db == "Client Test 2":
-                        saving_db = "invst_client_test"
                     else:
                         saving_db = None
-                    add_new_client_db(saving_db, first_name, last_name, phone, phone, phone, dob)
+                    add_new_client_db(saving_db, first_name, last_name, phone, phone, phone, dob, lang)
                     print("it all a truthy")
                     st.success("Client saved successfully")
                     st.snow()
@@ -327,13 +312,11 @@ else:
     if 'view_contact' not in st.session_state:
         st.session_state["view_contact"] = None
     if "view_contact" and st.session_state["view_contact"]:
-        names = [['Jonathan kofi', '+12627261908'], ['Jonathan1 kofi', '+12627261908'],
-                 ['Jonathan2 kofi', '+12627261908'], ['Jonathan3 kofi', '+12627261908']]
         with st.container(border=True, height=600):
             st.info(f"AVAILABLE CONTACTS")
             select_clients = st.selectbox(
                 "",
-                ('Investment Client', 'Insurance Client', "Client Testing", "Client Testing 2"),
+                ("Client Testing", 'Investment Client', 'Insurance Client'),
                 index=None,
                 placeholder="Select group of clients..."
             )
@@ -343,8 +326,6 @@ else:
                 select_clients = "insurance_client"
             elif select_clients == "Client Testing":
                 select_clients = "insuran_client_test"
-            elif select_clients == "Client Testing 2":
-                select_clients = "invst_client_test"
             else:
                 select_clients = None
 
@@ -386,8 +367,8 @@ else:
                 add_sche_date, add_sche_client = st.columns(2)
                 sched_date = add_sche_date.date_input("Choose Date:", key="sched_date")
                 sched_clients = add_sche_client.selectbox("Select Clients:",
-                                                          ('Investment Clients', 'Insurance Clients', 'All Clients',
-                                                           'Insurance TESTING', 'Investment TESTING'),
+                                                          ('TESTING', 'Investment Clients', 'Insurance Clients',
+                                                           'All Clients'),
                                                           index=None,
                                                           placeholder="Select group of clients", key="sched_clients"
                                                           )
@@ -397,10 +378,8 @@ else:
                         sched_clients = "investment_client"
                     elif sched_clients == 'Insurance Clients':
                         sched_clients = "insurance_client"
-                    elif sched_clients == 'Insurance TESTING':
+                    elif sched_clients == 'TESTING':
                         sched_clients = "insuran_client_test"
-                    elif sched_clients == 'Investment TESTING':
-                        sched_clients = "invst_client_test"
                     elif sched_clients == 'All Clients':
                         sched_clients = "all_clients"
                     else:
