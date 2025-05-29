@@ -12,6 +12,11 @@ load_dotenv()
 # Define your database connection URI
 DATABASE_URI = os.getenv("DATABASE_URI")
 
+#Signatures
+SIGN_NAME = os.getenv()
+SIGN_EMAIL = os.getenv()
+SIGN_PHONE = os.getenv()
+
 
 # Initializing SQLAlchemy engine
 def init_connection():
@@ -20,9 +25,6 @@ def init_connection():
 
 # DATABASE CONNECTION OBJECT
 engine = init_connection()
-
-
-
 
 
 def total_number_clients():
@@ -76,11 +78,11 @@ def wish_happy_birthday():
                 "Que cette journée spéciale soit remplie de joie, de succès, et de beaux moments à partager avec tes "
                 "proches.\n\n"
                 "Joyeux anniversaire !\n\n"
-                "Jean Kokou\n"
+                f"{SIGN_NAME}\n"
                 "Votre Conseiller Financier\n"
                 "IA Groupe\n\n"
-                "Kokoujean.kpomegbe@agc.ia.ca\n"
-                "514 793 3114"
+                f"📧 {SIGN_EMAIL}\n"
+                f"📞 {SIGN_PHONE}"
             )
 
             dob = client[-2]
