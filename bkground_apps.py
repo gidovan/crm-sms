@@ -13,9 +13,9 @@ load_dotenv()
 DATABASE_URI = os.getenv("DATABASE_URI")
 
 #Signatures
-SIGN_NAME = os.getenv()
-SIGN_EMAIL = os.getenv()
-SIGN_PHONE = os.getenv()
+SIGN_NAME = os.getenv("SIGN_NAME")
+SIGN_EMAIL = os.getenv("SIGN_EMAIL")
+SIGN_PHONE = os.getenv("SIGN_PHONE")
 
 
 # Initializing SQLAlchemy engine
