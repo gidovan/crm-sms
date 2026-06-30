@@ -16,6 +16,7 @@ DATABASE_URI = os.getenv("DATABASE_URI")
 SIGN_NAME = os.getenv("SIGN_NAME")
 SIGN_EMAIL = os.getenv("SIGN_EMAIL")
 SIGN_PHONE = os.getenv("SIGN_PHONE")
+COMPANY_NAME = os.getenv("COMPANY_NAME")
 
 
 # Initializing SQLAlchemy engine
@@ -80,7 +81,7 @@ def wish_happy_birthday():
                 "Joyeux anniversaire !\n\n"
                 f"{SIGN_NAME}\n"
                 "Votre Conseiller Financier\n"
-                "IA Groupe\n\n"
+                f"{COMPANY_NAME}\n\n"
                 f"📧 {SIGN_EMAIL}\n"
                 f"📞 {SIGN_PHONE}"
             )
